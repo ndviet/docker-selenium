@@ -1,4 +1,4 @@
-FROM jrottenberg/ffmpeg:4.3.1-ubuntu2004
+FROM jrottenberg/ffmpeg:4.4.3-ubuntu2004
 LABEL authors="Selenium <selenium-developers@googlegroups.com>"
 
 #================================================
@@ -18,7 +18,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 RUN apt-get -qqy update \
   && apt-get upgrade -yq \
   && apt-get -qqy --no-install-recommends install \
-    supervisor x11-xserver-utils python3-pip \
+    supervisor x11-xserver-utils x11-utils curl jq python3-pip \
   && python3 -m pip install --upgrade pip \
   && python3 -m pip install --upgrade setuptools \
   && python3 -m pip install --upgrade wheel \    
@@ -45,5 +45,6 @@ ENV SE_CODEC libx264
 ENV SE_PRESET "-preset ultrafast"
 ENV FILE_NAME video.mp4
 ENV SE_VIDEO_FOLDER /videos
+ENV SE_NODE_PORT 5555
 
 EXPOSE 9000
