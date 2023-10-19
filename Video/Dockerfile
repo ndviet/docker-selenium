@@ -1,5 +1,6 @@
-FROM jrottenberg/ffmpeg:4.4.3-ubuntu2004
+FROM jrottenberg/ffmpeg:6.0-ubuntu2004
 LABEL authors="Selenium <selenium-developers@googlegroups.com>"
+LABEL authors="Happy TestOps <contact@ndviet.org>"
 
 #================================================
 # Customize sources for apt-get
@@ -33,6 +34,7 @@ RUN cd /opt/bin && pip install psutil
 
 RUN  mkdir -p /var/run/supervisor /var/log/supervisor /videos
 
+RUN chmod +x /opt/bin/*
 ENTRYPOINT ["/opt/bin/entry_point.sh"]
 CMD ["/opt/bin/entry_point.sh"]
 
