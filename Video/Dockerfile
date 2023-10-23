@@ -17,11 +17,13 @@ RUN python3 -m pip install --no-cache --upgrade --no-cache-dir pip urllib3 setup
 #======================================
 # Add Supervisor configuration files
 #======================================
+ENV SE_VIDEO_FOLDER /videos
+ENV SE_SESSION_FOLDER /sessions
 RUN mkdir -p /opt/bin/
-RUN mkdir -p /var/run/supervisor /var/log/supervisor /videos
+RUN mkdir -p /var/run/supervisor /var/log/supervisor ${SE_VIDEO_FOLDER} ${SE_SESSION_FOLDER}
 
 COPY supervisord.conf /etc
-COPY entry_point.sh video.sh video_ready.py /opt/bin/
+COPY entry_point.sh video.sh session_task.sh video_ready.py /opt/bin/
 
 RUN chmod +x /opt/bin/*
 ENTRYPOINT ["/opt/bin/entry_point.sh"]
@@ -35,7 +37,6 @@ ENV SE_FRAME_RATE 15
 ENV SE_CODEC libx264
 ENV SE_PRESET "-preset ultrafast"
 ENV FILE_NAME video.mp4
-ENV SE_VIDEO_FOLDER /videos
 ENV SE_VIDEO_RECORD true
 ENV SE_NODE_PORT 5555
 ENV DRAIN_AFTER_SESSION_COUNT 0

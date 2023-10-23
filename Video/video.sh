@@ -26,6 +26,11 @@ function stop_recording {
     recorded_count=$((recorded_count+1))
 }
 
+function stop_dependencies() {
+    pkill -15 -f "video_ready.py"
+    pkill -15 -f "session_task.sh"
+}
+
 function terminate_gracefully {
     echo "Trapped SIGTERM/SIGINT/x so shutting down video-recording..."
     while true;
@@ -36,11 +41,11 @@ function terminate_gracefully {
             echo "Session: $session_id is active, waiting for it to finish"
             sleep 1
         else
-            pkill --signal TERM -f "ffmpeg"
+            pkill -15 -f "ffmpeg"
             break
         fi
     done
-    pkill --signal TERM -f "video_ready.py"
+    stop_dependencies
     echo "Shutdown completed!"
 }
 
@@ -84,6 +89,7 @@ then
 			if [ $max_recorded_count -gt 0 ] && [ $recorded_count -ge $max_recorded_count ];
       then
         echo "Max recorded count reached, exiting"
+        stop_dependencies
         exit 0
       fi
 		elif [ $recording_started = "true" ];
