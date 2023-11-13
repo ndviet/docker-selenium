@@ -2,6 +2,22 @@ apiVersion: v1
 entries:
   selenium-grid:
   - apiVersion: v2
+    appVersion: 4.15.0-20231110
+    created: "2023-11-13T19:18:48.093915297Z"
+    dependencies:
+    - condition: autoscaling.enabled
+      name: keda
+      repository: https://kedacore.github.io/charts
+      version: 2.12.0
+    description: A Helm chart for creating a Selenium Grid Server in Kubernetes
+    digest: 87b6c4968ac7396edfba2d915e69bd46c76c2af646956e44906f6a0d5d1086a0
+    icon: https://github.com/SeleniumHQ/docker-selenium/raw/trunk/logo.png
+    name: selenium-grid
+    type: application
+    urls:
+    - https://github.com/ndviet/docker-selenium/releases/download/selenium-grid-0.24.1/selenium-grid-0.24.1.tgz
+    version: 0.24.1
+  - apiVersion: v2
     appVersion: 4.15.0-20231102
     created: "2023-11-08T12:05:37.482971285Z"
     dependencies:
@@ -571,4 +587,4 @@ entries:
     urls:
     - https://github.com/SeleniumHQ/docker-selenium/releases/download/selenium-grid-0.3.0/selenium-grid-0.3.0.tgz
     version: 0.3.0
-generated: "2023-11-08T12:05:37.483708953Z"
+generated: "2023-11-13T19:18:48.094438907Z"
