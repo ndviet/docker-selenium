@@ -1,0 +1,1 @@
+The `ci` folder should contain a `values-*.yaml` file with the desired values, and chart-testing will automatically use these values when running the `ct install` command. For more details, see this [helm/chart-testing-action](https://github.com/helm/chart-testing-action)
