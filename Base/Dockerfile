@@ -1,4 +1,4 @@
-FROM ubuntu:jammy-20231004
+FROM ubuntu:latest
 LABEL authors="Selenium <selenium-developers@googlegroups.com>"
 
 #================================================
