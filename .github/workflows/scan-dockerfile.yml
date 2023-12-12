@@ -1,0 +1,52 @@
+name: Build & scan vulnerabilities
+
+on:
+  push:
+    paths:
+      - '**/Dockerfile'
+  pull_request:
+    paths:
+      - '**/Dockerfile'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-scan:
+    name: Build & scan vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get branch name (only for push to branch)
+        if: github.event_name == 'push'
+        run: echo "BRANCH=$(echo ${PUSH_BRANCH##*/})" >> $GITHUB_ENV
+        env:
+          PUSH_BRANCH: ${{ github.ref }}
+      - name: Get target branch name (only for PRs)
+        if: github.event_name == 'pull_request'
+        run: echo "BRANCH=$(echo ${TARGET_BRANCH##*/})" >> $GITHUB_ENV
+        env:
+          TARGET_BRANCH: ${{ github.head_ref }}
+      - name: Output branch name
+        run: echo ${BRANCH}
+      - name: Sets build date
+        run: echo "BUILD_DATE=$(date '+%Y%m%d')" >> $GITHUB_ENV
+      - name: Build Docker images
+        run: |
+          VERSION=${BRANCH} BUILD_DATE=${BUILD_DATE} make base
+          VERSION=${BRANCH} BUILD_DATE=${BUILD_DATE} make node_base
+      - name: Scan Base image
+        uses: crazy-max/ghaction-container-scan@v3
+        with:
+          image: selenium/base:${{ env.BRANCH }}-${{ env.BUILD_DATE }}
+          dockerfile: ./Base/Dockerfile
+          annotations: true
+          severity_threshold: CRITICAL
+      - name: Scan NodeBase image
+        uses: crazy-max/ghaction-container-scan@v3
+        with:
+          image: selenium/node-base:${{ env.BRANCH }}-${{ env.BUILD_DATE }}
+          dockerfile: ./NodeBase/Dockerfile
+          annotations: true
+          severity_threshold: CRITICAL
