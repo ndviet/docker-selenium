@@ -1,4 +1,4 @@
-FROM ubuntu:jammy-20231128
+FROM ubuntu:jammy
 LABEL authors="Selenium <selenium-developers@googlegroups.com>"
 
 # Arguments to define the version of dependencies to download
