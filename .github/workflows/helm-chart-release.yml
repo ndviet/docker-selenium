@@ -1,4 +1,6 @@
 name: Release Charts
+concurrency:
+  group: ${{ github.workflow }}
 
 on:
   push:

@@ -1,4 +1,6 @@
 name: Test Helm Charts
+concurrency:
+  group: ${{ github.workflow }}
 
 on:
   push:
@@ -19,7 +21,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test-strategy: [chart_test, chart_test_parallel_autoscaling, chart_test_https, chart_test_parallel_autoscaling_https]
+        test-strategy:
+          - chart_test_parallel_autoscaling_deployment
+          - chart_test_parallel_autoscaling_job
+          - chart_test_parallel_autoscaling_deployment_https
+          - chart_test_parallel_autoscaling_job_https
     steps:
       - uses: actions/checkout@v4
       - name: Output Docker info

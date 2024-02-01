@@ -1,4 +1,6 @@
 name: Test video files
+concurrency:
+  group: ${{ github.workflow }}
 
 on:
   push:

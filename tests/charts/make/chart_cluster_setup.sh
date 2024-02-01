@@ -36,7 +36,7 @@ echo "Create Kind cluster"
 kind create cluster --wait ${WAIT_TIMEOUT} --name ${CLUSTER_NAME} --config tests/charts/config/kind-cluster.yaml
 
 echo "Install KEDA core on kind kubernetes cluster"
-kubectl apply --server-side -f https://github.com/kedacore/keda/releases/download/v2.12.1/keda-2.12.1-core.yaml
+helm upgrade -i ${KEDA_NAMESPACE} -n ${KEDA_NAMESPACE} --create-namespace kedacore/keda
 
 echo "Load built local Docker Images into Kind Cluster"
 image_list=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep ${NAMESPACE} | grep ${BUILD_DATE:-$VERSION})

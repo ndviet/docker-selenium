@@ -1,4 +1,6 @@
 name: Scan Dockerfile vulnerabilities
+concurrency:
+  group: ${{ github.workflow }}
 
 on:
   push:
