@@ -1,4 +1,6 @@
 name: Build & test
+concurrency:
+  group: ${{ github.workflow }}
 
 on:
   push:

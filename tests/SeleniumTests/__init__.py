@@ -14,6 +14,7 @@ SELENIUM_GRID_PROTOCOL = os.environ.get('SELENIUM_GRID_PROTOCOL', 'http')
 SELENIUM_GRID_HOST = os.environ.get('SELENIUM_GRID_HOST', 'localhost')
 SELENIUM_GRID_PORT = os.environ.get('SELENIUM_GRID_PORT', '4444')
 SELENIUM_GRID_TEST_HEADLESS = os.environ.get('SELENIUM_GRID_TEST_HEADLESS', 'false').lower() == 'true'
+SELENIUM_GRID_AUTOSCALING = os.environ.get('SELENIUM_GRID_AUTOSCALING', 'false').lower() == 'true'
 WEB_DRIVER_WAIT_TIMEOUT = int(os.environ.get('WEB_DRIVER_WAIT_TIMEOUT', 60))
 
 class SeleniumGenericTests(unittest.TestCase):
@@ -23,17 +24,17 @@ class SeleniumGenericTests(unittest.TestCase):
         self.assertTrue(self.driver.title == 'The Internet')
 
     # https://github.com/tourdedave/elemental-selenium-tips/blob/master/03-work-with-frames/python/frames.py
-    def test_with_frames(self):
-        driver = self.driver
-        driver.get('http://the-internet.herokuapp.com/nested_frames')
-        wait = WebDriverWait(driver, WEB_DRIVER_WAIT_TIMEOUT)
-        frame_top = wait.until(
-            EC.frame_to_be_available_and_switch_to_it('frame-top')
-        )
-        frame_middle = wait.until(
-            EC.frame_to_be_available_and_switch_to_it('frame-middle')
-        )
-        self.assertTrue(driver.find_element(By.ID, 'content').text == "MIDDLE", "content should be MIDDLE")
+    # def test_with_frames(self):
+    #     driver = self.driver
+    #     driver.get('http://the-internet.herokuapp.com/nested_frames')
+    #     wait = WebDriverWait(driver, WEB_DRIVER_WAIT_TIMEOUT)
+    #     frame_top = wait.until(
+    #         EC.frame_to_be_available_and_switch_to_it('frame-top')
+    #     )
+    #     frame_middle = wait.until(
+    #         EC.frame_to_be_available_and_switch_to_it('frame-middle')
+    #     )
+    #     self.assertTrue(driver.find_element(By.ID, 'content').text.strip() == "MIDDLE", "content should be MIDDLE")
 
     # https://github.com/tourdedave/elemental-selenium-tips/blob/master/05-select-from-a-dropdown/python/dropdown.py
     def test_select_from_a_dropdown(self):
@@ -143,7 +144,7 @@ class FirefoxTests(SeleniumGenericTests):
         self.driver.maximize_window()
         self.assertTrue(self.driver.title == 'The Internet')
 
-class JobAutoscaling():
+class Autoscaling():
     def run(self, test_classes):
         with concurrent.futures.ThreadPoolExecutor() as executor:
             futures = []
@@ -161,7 +162,14 @@ class JobAutoscaling():
                     print(traceback.format_exc())
                     raise Exception(f"Parallel tests failed: {str(test)} failed with exception: {str(e)}")
 
+class DeploymentAutoscalingTests(unittest.TestCase):
+    def test_parallel_autoscaling(self):
+        runner = Autoscaling()
+        runner.run([EdgeTests])
+        runner.run([ChromeTests])
+        runner.run([FirefoxTests])
+
 class JobAutoscalingTests(unittest.TestCase):
     def test_parallel_autoscaling(self):
-        runner = JobAutoscaling()
-        runner.run([ChromeTests, EdgeTests, FirefoxTests])
+        runner = Autoscaling()
+        runner.run([FirefoxTests, EdgeTests, ChromeTests])

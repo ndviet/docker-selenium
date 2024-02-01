@@ -1,6 +1,7 @@
 #!/bin/bash
 
 echo "Set ENV variables"
+CLUSTER=${CLUSTER:-"minikube"}
 CLUSTER_NAME=${CLUSTER_NAME:-"chart-testing"}
 RELEASE_NAME=${RELEASE_NAME:-"test"}
 SELENIUM_NAMESPACE=${SELENIUM_NAMESPACE:-"selenium"}
@@ -32,14 +33,24 @@ on_failure() {
 # Trap ERR signal and call on_failure function
 trap 'on_failure' ERR
 
-echo "Create Kind cluster"
-kind create cluster --wait ${WAIT_TIMEOUT} --name ${CLUSTER_NAME} --config tests/charts/config/kind-cluster.yaml
+if [ "${CLUSTER}" = "kind" ]; then
+  echo "Start Kind cluster"
+  kind create cluster --wait ${WAIT_TIMEOUT} --name ${CLUSTER_NAME} --config tests/charts/config/kind-cluster.yaml
+elif [ "${CLUSTER}" = "minikube" ]; then
+  echo "Start Minikube cluster"
+  sudo chmod 777 /tmp
+  export CHANGE_MINIKUBE_NONE_USER=true
+  sudo -SE minikube start --vm-driver=none --kubernetes-version=$(curl -L -s https://dl.k8s.io/release/stable.txt) --network-plugin=cni --cni=calico
+  sudo chown -R $USER $HOME/.kube $HOME/.minikube
+fi
 
 echo "Install KEDA core on kind kubernetes cluster"
-kubectl apply --server-side -f https://github.com/kedacore/keda/releases/download/v2.12.1/keda-2.12.1-core.yaml
+helm upgrade -i ${KEDA_NAMESPACE} -n ${KEDA_NAMESPACE} --create-namespace --set webhooks.enabled=false kedacore/keda
 
-echo "Load built local Docker Images into Kind Cluster"
-image_list=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep ${NAMESPACE} | grep ${BUILD_DATE:-$VERSION})
-for image in $image_list; do
-    kind load docker-image --name ${CLUSTER_NAME} "$image"
-done
+if [ "${CLUSTER}" = "kind" ]; then
+  echo "Load built local Docker Images into Kind Cluster"
+  image_list=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep ${NAMESPACE} | grep ${BUILD_DATE:-$VERSION})
+  for image in $image_list; do
+      kind load docker-image --name ${CLUSTER_NAME} "$image"
+  done
+fi
