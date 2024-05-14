@@ -3,6 +3,40 @@ entries:
   selenium-grid:
   - apiVersion: v2
     appVersion: 4.20.0-20240505
+    created: "2024-05-14T05:46:00.445586027Z"
+    dependencies:
+    - condition: autoscaling.enabled
+      name: keda
+      repository: https://kedacore.github.io/charts
+      version: 2.14.2
+    - condition: ingress-nginx.enabled
+      name: ingress-nginx
+      repository: https://kubernetes.github.io/ingress-nginx
+      version: 4.10.1
+    - condition: tracing.enabled
+      name: jaeger
+      repository: https://jaegertracing.github.io/helm-charts
+      version: 3.0.6
+    - alias: prometheus-stack
+      condition: monitoring.enabled
+      name: kube-prometheus-stack
+      repository: https://prometheus-community.github.io/helm-charts
+      version: 58.4.0
+    description: A Helm chart for creating a Selenium Grid Server in Kubernetes
+    digest: 9c43805c92833a0e4cb45b68b44ef2c50b6728a3702c13af19112693e4268dd5
+    icon: https://github.com/SeleniumHQ/docker-selenium/raw/trunk/logo.png
+    maintainers:
+    - email: selenium-developers@googlegroups.com
+      name: SeleniumHQ
+    name: selenium-grid
+    sources:
+    - https://github.com/SeleniumHQ/docker-selenium
+    type: application
+    urls:
+    - https://github.com/NDViet/docker-selenium/releases/download/selenium-grid-0.30.2/selenium-grid-0.30.2.tgz
+    version: 0.30.2
+  - apiVersion: v2
+    appVersion: 4.20.0-20240505
     created: "2024-05-06T20:36:19.229166252Z"
     dependencies:
     - condition: autoscaling.enabled
@@ -1007,4 +1041,4 @@ entries:
     urls:
     - https://github.com/SeleniumHQ/docker-selenium/releases/download/selenium-grid-0.3.0/selenium-grid-0.3.0.tgz
     version: 0.3.0
-generated: "2024-05-06T20:36:19.22939658Z"
+generated: "2024-05-14T05:46:00.445781072Z"
