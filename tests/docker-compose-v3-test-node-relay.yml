@@ -1,6 +1,8 @@
 version: "3"
 services:
   node-relay-emulator:
+    profiles:
+      - relay_appium
     image: selenium/node-base:${TAG}
     shm_size: 2gb
     depends_on:
@@ -21,6 +23,8 @@ services:
       - SE_NODE_RELAY_WEB_VNC=ws://appium-emulator:6080/websockify
 
   node-relay-standalone:
+    profiles:
+      - relay_standalone
     image: selenium/node-base:${TAG}
     shm_size: 2gb
     depends_on:
@@ -64,11 +68,15 @@ services:
     command: ["./bootstrap.sh", "${NODE}"]
 
   firefox-receiver:
-    image: selenium/standalone-firefox:${TAG}
+    profiles:
+      - relay_standalone
+    image: selenium/standalone-${BROWSER}:${TAG}
     shm_size: 2gb
-    container_name: firefox-receiver
+    container_name: standalone-receiver
 
   appium-emulator:
+    profiles:
+      - relay_appium
     image: ${ANDROID_BASED_NAME}/${ANDROID_BASED_IMAGE}:latest
     shm_size: 2gb
     build:
