@@ -1,0 +1,20 @@
+{{- if .Values.isolateComponents }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "seleniumGrid.sessionMap.configmap.fullname" $ }}
+  namespace: {{ .Release.Namespace }}
+{{- with .Values.sessionMapConfigMap.annotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+{{- end }}
+  labels:
+    {{- include "seleniumGrid.commonLabels" . | nindent 4 }}
+    {{- with .Values.customLabels }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+data:
+  SE_SESSIONS_MAP_HOST: '{{ template "seleniumGrid.sessionMap.fullname" . }}.{{ .Release.Namespace }}'
+  SE_SESSIONS_MAP_PORT: '{{ .Values.components.sessionMap.port }}'
+  SE_SESSIONS_HOST: '{{ template "seleniumGrid.sessionMap.fullname" . }}.{{ .Release.Namespace }}'
+  SE_SESSIONS_PORT: '{{ .Values.components.sessionMap.port }}'
+{{- end }}

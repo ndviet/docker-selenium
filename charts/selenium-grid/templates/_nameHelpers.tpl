@@ -64,6 +64,13 @@ Selenium Hub fullname
 {{- end -}}
 
 {{/*
+Selenium Hub ConfigMap fullname
+*/}}
+{{- define "seleniumGrid.hub.configmap.fullname" -}}
+{{- tpl (default (include "seleniumGrid.component.name" (list "selenium-hub-config" $)) .Values.hubConfigMap.nameOverride) $ | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
 Event bus fullname
 */}}
 {{- define "seleniumGrid.eventBus.fullname" -}}
@@ -74,7 +81,7 @@ Event bus fullname
 Event bus ConfigMap fullname
 */}}
 {{- define "seleniumGrid.eventBus.configmap.fullname" -}}
-{{- tpl (default (include "seleniumGrid.eventBus.fullname" $) .Values.busConfigMap.nameOverride) $ | trunc 63 | trimSuffix "-" -}}
+{{- tpl (default (include "seleniumGrid.component.name" (list "selenium-event-bus-config" $)) .Values.busConfigMap.nameOverride) $ | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*
@@ -166,6 +173,20 @@ Router ConfigMap fullname
 */}}
 {{- define "seleniumGrid.router.configmap.fullname" -}}
 {{- tpl (default (include "seleniumGrid.component.name" (list "selenium-router-config" $)) .Values.routerConfigMap.nameOverride) $ | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+SessionMap ConfigMap fullname
+*/}}
+{{- define "seleniumGrid.sessionMap.configmap.fullname" -}}
+{{- tpl (default (include "seleniumGrid.component.name" (list "selenium-session-map-config" $)) .Values.sessionMapConfigMap.nameOverride) $ | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+SessionQueue ConfigMap fullname
+*/}}
+{{- define "seleniumGrid.sessionQueue.configmap.fullname" -}}
+{{- tpl (default (include "seleniumGrid.component.name" (list "selenium-session-queue-config" $)) .Values.sessionQueueConfigMap.nameOverride) $ | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{/*

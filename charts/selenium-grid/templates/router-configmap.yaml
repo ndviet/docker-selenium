@@ -1,3 +1,4 @@
+{{- if .Values.isolateComponents }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -12,6 +13,14 @@ metadata:
       {{- toYaml . | nindent 4 }}
     {{- end }}
 data:
+{{- if .Values.components.router.disableUI }}
+  SE_DISABLE_UI: '{{ .Values.components.router.disableUI }}'
+{{- end }}
+{{- with .Values.components.subPath }}
+  SE_SUB_PATH: {{ . | quote }}
+{{- end }}
+  SE_ROUTER_HOST: '{{ template "seleniumGrid.router.fullname" . }}.{{ .Release.Namespace }}'
+  SE_ROUTER_PORT: '{{ .Values.components.router.port }}'
 {{- $fileProceeded := list -}}
 {{- range $path, $_ :=  .Files.Glob $.Values.routerConfigMap.extraScriptsImportFrom }}
   {{- $fileName := base $path -}}
@@ -27,4 +36,5 @@ data:
   {{- if not (has $fileName $fileProceeded) }}
 {{- $fileName | nindent 2 -}}: {{- toYaml (default "" $value) | indent 4 }}
   {{- end }}
+{{- end }}
 {{- end }}

@@ -21,10 +21,12 @@ spec:
     metadata:
       labels: *distributor_labels
       annotations:
+        checksum/distributor-configmap: {{ include (print $.Template.BasePath "/distributor-configmap.yaml") . | sha256sum }}
+        checksum/session-map-configmap: {{ include (print $.Template.BasePath "/session-map-configmap.yaml") . | sha256sum }}
+        checksum/session-queue-configmap: {{ include (print $.Template.BasePath "/session-queuer-configmap.yaml") . | sha256sum }}
         checksum/event-bus-configmap: {{ include (print $.Template.BasePath "/event-bus-configmap.yaml") . | sha256sum }}
         checksum/logging-configmap: {{ include (print $.Template.BasePath "/logging-configmap.yaml") . | sha256sum }}
         checksum/server-configmap: {{ include (print $.Template.BasePath "/server-configmap.yaml") . | sha256sum }}
-        checksum/distributor-configmap: {{ include (print $.Template.BasePath "/distributor-configmap.yaml") . | sha256sum }}
         checksum/secrets: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
     {{- with .Values.components.distributor.annotations }}
         {{- toYaml . | nindent 8 }}
@@ -41,31 +43,16 @@ spec:
           env:
             - name: SE_OTEL_SERVICE_NAME
               value: '{{ template "seleniumGrid.distributor.fullname" . }}'
-            - name: SE_DISTRIBUTOR_HOST
-              value: '{{ template "seleniumGrid.distributor.fullname" . }}.{{ .Release.Namespace }}'
-            - name: SE_DISTRIBUTOR_PORT
-              value: {{ .Values.components.distributor.port | quote }}
-            - name: SE_SESSIONS_MAP_HOST
-              value: '{{ template "seleniumGrid.sessionMap.fullname" . }}.{{ .Release.Namespace }}'
-            - name: SE_SESSIONS_MAP_PORT
-              value: {{ .Values.components.sessionMap.port | quote }}
-            - name: SE_SESSION_QUEUE_HOST
-              value: '{{ template "seleniumGrid.sessionQueue.fullname" . }}.{{ .Release.Namespace }}'
-            - name: SE_SESSION_QUEUE_PORT
-              value: {{ .Values.components.sessionQueue.port | quote }}
-            {{- if .Values.components.distributor.newSessionThreadPoolSize }}
-            - name: SE_NEW_SESSION_THREAD_POOL_SIZE
-              value: {{ .Values.components.distributor.newSessionThreadPoolSize | quote }}
-            {{- else if (eq (include "seleniumGrid.useKEDA" $) "true") }}
-            - name: SE_NEW_SESSION_THREAD_POOL_SIZE
-              value: '{{ template "seleniumGrid.autoscaling.distributor.threadPoolSize" $ }}'
-            {{- end }}
           {{- with .Values.components.extraEnvironmentVariables }}
             {{- tpl (toYaml .) $ | nindent 12 }}
           {{- end }}
           envFrom:
             - configMapRef:
                 name: {{ template "seleniumGrid.distributor.configmap.fullname" . }}
+            - configMapRef:
+                name: {{ template "seleniumGrid.sessionMap.configmap.fullname" . }}
+            - configMapRef:
+                name: {{ template "seleniumGrid.sessionQueue.configmap.fullname" . }}
             - configMapRef:
                 name: {{ template "seleniumGrid.eventBus.configmap.fullname" . }}
             - configMapRef:

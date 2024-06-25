@@ -21,6 +21,7 @@ spec:
     metadata:
       labels: *event_bus_labels
       annotations:
+        checksum/event-bus-configmap: {{ include (print $.Template.BasePath "/event-bus-configmap.yaml") . | sha256sum }}
         checksum/logging-configmap: {{ include (print $.Template.BasePath "/logging-configmap.yaml") . | sha256sum }}
         checksum/server-configmap: {{ include (print $.Template.BasePath "/server-configmap.yaml") . | sha256sum }}
         checksum/secrets: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
@@ -46,14 +47,12 @@ spec:
           env:
             - name: SE_OTEL_SERVICE_NAME
               value: '{{ template "seleniumGrid.eventBus.fullname" . }}'
-            - name: SE_EVENT_BUS_HOST
-              value: '{{ template "seleniumGrid.eventBus.fullname" . }}.{{ .Release.Namespace }}'
-            - name: SE_EVENT_BUS_PORT
-              value: {{ .Values.components.eventBus.port | quote }}
         {{- with .Values.components.extraEnvironmentVariables }}
             {{- tpl (toYaml .) $ | nindent 12 }}
         {{- end }}
           envFrom:
+            - configMapRef:
+                name: {{ template "seleniumGrid.eventBus.configmap.fullname" . }}
             - configMapRef:
                 name: {{ template "seleniumGrid.logging.configmap.fullname" . }}
             - configMapRef:

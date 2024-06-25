@@ -40,14 +40,12 @@ spec:
           env:
             - name: SE_OTEL_SERVICE_NAME
               value: '{{ template "seleniumGrid.sessionMap.fullname" . }}'
-            - name: SE_SESSIONS_HOST
-              value: '{{ template "seleniumGrid.sessionMap.fullname" . }}.{{ .Release.Namespace }}'
-            - name: SE_SESSIONS_PORT
-              value: {{ .Values.components.sessionMap.port | quote }}
         {{- with .Values.components.extraEnvironmentVariables }}
             {{- tpl (toYaml .) $ | nindent 12 }}
         {{- end }}
           envFrom:
+            - configMapRef:
+                name: {{ template "seleniumGrid.sessionMap.configmap.fullname" . }}
             - configMapRef:
                 name: {{ template "seleniumGrid.logging.configmap.fullname" . }}
             - configMapRef:

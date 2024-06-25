@@ -165,6 +165,31 @@ routerConfigMap:
   # Custom annotations for configmap
   annotations: {}
 
+sessionMapConfigMap:
+  # nameOverride:
+  # Custom annotations for configmap
+  annotations: {}
+
+sessionQueueConfigMap:
+  # nameOverride:
+  # Custom annotations for configmap
+  annotations: {}
+
+hubConfigMap:
+  # nameOverride:
+  # Default mode for ConfigMap is mounted as file
+  defaultMode: 0755
+  # Directory where the extra scripts are imported to ConfigMap by default (if given a relative path, it should be in chart's directory)
+  extraScriptsImportFrom: "configs/distributor/**"
+  # Directory where the extra scripts are mounted to
+  extraScriptsDirectory: "/opt/selenium"
+  extraScripts:
+    distributorProbe.sh: ""
+  # Name of volume mount is used to mount scripts in the ConfigMap
+  scriptVolumeMountName:
+  # Custom annotations for configmap
+  annotations: {}
+
 # ConfigMap that contains common environment variables for browser nodes
 nodeConfigMap:
   # nameOverride:

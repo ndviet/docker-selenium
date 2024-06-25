@@ -1,10 +1,10 @@
-{{- if .Values.isolateComponents }}
+{{- if (not .Values.isolateComponents) }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ template "seleniumGrid.distributor.configmap.fullname" $ }}
+  name: {{ template "seleniumGrid.hub.configmap.fullname" . }}
   namespace: {{ .Release.Namespace }}
-{{- with .Values.distributorConfigMap.annotations }}
+{{- with .Values.hubConfigMap.annotations }}
   annotations: {{- toYaml . | nindent 4 }}
 {{- end }}
   labels:
@@ -13,17 +13,23 @@ metadata:
       {{- toYaml . | nindent 4 }}
     {{- end }}
 data:
-  SE_DISTRIBUTOR_HOST: {{ printf "%s.%s.svc.cluster.local" (include "seleniumGrid.distributor.fullname" $) (.Release.Namespace) | quote }}
-  SE_DISTRIBUTOR_PORT: {{ $.Values.components.distributor.port | quote }}
-{{- if .Values.components.distributor.newSessionThreadPoolSize }}
-  SE_NEW_SESSION_THREAD_POOL_SIZE: {{ $.Values.components.distributor.newSessionThreadPoolSize | quote }}
+  SE_HUB_HOST: {{ printf "%s.%s.svc.cluster.local" (include "seleniumGrid.hub.fullname" $) (.Release.Namespace) | quote }}
+  SE_HUB_PORT: {{ $.Values.hub.port | quote }}
+{{- with $.Values.hub.subPath }}
+  SE_SUB_PATH: {{ . | quote }}
+{{- end }}
+{{- if $.Values.hub.disableUI }}
+  SE_DISABLE_UI: {{ $.Values.hub.disableUI | quote }}
+{{- end }}
+{{- if $.Values.hub.newSessionThreadPoolSize }}
+  SE_NEW_SESSION_THREAD_POOL_SIZE: {{ $.Values.hub.newSessionThreadPoolSize | quote }}
 {{- else if (eq (include "seleniumGrid.useKEDA" $) "true") }}
   SE_NEW_SESSION_THREAD_POOL_SIZE: {{ template "seleniumGrid.autoscaling.distributor.threadPoolSize" $ | quote }}
 {{- end }}
 {{- $fileProceeded := list -}}
-{{- range $path, $_ :=  .Files.Glob $.Values.distributorConfigMap.extraScriptsImportFrom }}
+{{- range $path, $_ :=  .Files.Glob $.Values.hubConfigMap.extraScriptsImportFrom }}
   {{- $fileName := base $path -}}
-  {{- $value := index $.Values.distributorConfigMap.extraScripts $fileName -}}
+  {{- $value := index $.Values.hubConfigMap.extraScripts $fileName -}}
   {{- if empty $value }}
 {{- $fileName | nindent 2 -}}: {{- toYaml ($.Files.Get $path) | indent 4 }}
   {{- else }}
@@ -31,7 +37,7 @@ data:
   {{- end }}
   {{- $fileProceeded = append $fileProceeded $fileName -}}
 {{- end }}
-{{- range $fileName, $value := .Values.distributorConfigMap.extraScripts }}
+{{- range $fileName, $value := .Values.hubConfigMap.extraScripts }}
   {{- if not (has $fileName $fileProceeded) }}
 {{- $fileName | nindent 2 -}}: {{- toYaml (default "" $value) | indent 4 }}
   {{- end }}
