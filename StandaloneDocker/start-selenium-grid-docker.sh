@@ -8,7 +8,11 @@ echo "Starting Selenium Grid Standalone Docker..."
 function append_se_opts() {
   local option="${1}"
   local value="${2:-""}"
-  local log_message="${3:-true}"
+  local allow_empty="${3:-false}"
+  local log_message="${4:-true}"
+  if [ "${allow_empty}" = "false" ] && [ -z "${value}" ]; then
+    return
+  fi
   if [[ "${SE_OPTS}" != *"${option}"* ]]; then
     if [ "${log_message}" = "true" ]; then
       echo "Appending Selenium option: ${option} ${value}"
@@ -18,54 +22,28 @@ function append_se_opts() {
       SE_OPTS="${SE_OPTS} ${value}"
     fi
   else
-    echo "Selenium option: ${option} already set in env variable SE_OPTS. Ignore new option: ${option} ${value}"
+    export SE_OPTS
+    echo "Selenium option: ${option} already set in env variable SE_OPTS. Skipping new option: ${option} ${value}"
   fi
 }
-
-if [ ! -z "$SE_OPTS" ]; then
-  echo "Appending Selenium options: ${SE_OPTS}"
-fi
 
 if [ ! -z "$SE_NODE_GRID_URL" ]; then
   echo "Appending Grid url: ${SE_NODE_GRID_URL}"
   SE_GRID_URL="--grid-url ${SE_NODE_GRID_URL}"
 fi
 
-if [ ! -z "$SE_NODE_ENABLE_MANAGED_DOWNLOADS" ]; then
-  append_se_opts "--enable-managed-downloads" "${SE_NODE_ENABLE_MANAGED_DOWNLOADS}"
-fi
-
-if [ ! -z "$SE_NODE_ENABLE_CDP" ]; then
-  append_se_opts "--enable-cdp" "${SE_NODE_ENABLE_CDP}"
-fi
-
-if [ ! -z "$SE_NODE_REGISTER_PERIOD" ]; then
-  append_se_opts "--register-period" "${SE_NODE_REGISTER_PERIOD}"
-fi
-
-if [ ! -z "$SE_NODE_REGISTER_CYCLE" ]; then
-  append_se_opts "--register-cycle" "${SE_NODE_REGISTER_CYCLE}"
-fi
-
-if [ ! -z "$SE_NODE_HEARTBEAT_PERIOD" ]; then
-  append_se_opts "--heartbeat-period" "${SE_NODE_HEARTBEAT_PERIOD}"
-fi
-
-if [ ! -z "$SE_LOG_LEVEL" ]; then
-  append_se_opts "--log-level" "${SE_LOG_LEVEL}"
-fi
-
-if [ ! -z "$SE_HTTP_LOGS" ]; then
-  append_se_opts "--http-logs" "${SE_HTTP_LOGS}"
-fi
-
-if [ ! -z "$SE_STRUCTURED_LOGS" ]; then
-  append_se_opts "--structured-logs" "${SE_STRUCTURED_LOGS}"
-fi
-
-if [ ! -z "$SE_EXTERNAL_URL" ]; then
-  append_se_opts "--external-url" "${SE_EXTERNAL_URL}"
-fi
+append_se_opts "--enable-managed-downloads" "${SE_NODE_ENABLE_MANAGED_DOWNLOADS}"
+append_se_opts "--enable-cdp" "${SE_NODE_ENABLE_CDP}"
+append_se_opts "--register-period" "${SE_NODE_REGISTER_PERIOD}"
+append_se_opts "--register-cycle" "${SE_NODE_REGISTER_CYCLE}"
+append_se_opts "--heartbeat-period" "${SE_NODE_HEARTBEAT_PERIOD}"
+append_se_opts "--log-level" "${SE_LOG_LEVEL}"
+append_se_opts "--http-logs" "${SE_HTTP_LOGS}"
+append_se_opts "--structured-logs" "${SE_STRUCTURED_LOGS}"
+append_se_opts "--external-url" "${SE_EXTERNAL_URL}"
+append_se_opts "--session-request-timeout" "${SE_SESSION_REQUEST_TIMEOUT}"
+append_se_opts "--session-retry-interval" "${SE_SESSION_RETRY_INTERVAL}"
+append_se_opts "--relax-checks" "${SE_RELAX_CHECKS}"
 
 if [ "${SE_ENABLE_TLS}" = "true" ]; then
   # Configure truststore for the server
@@ -84,12 +62,8 @@ if [ "${SE_ENABLE_TLS}" = "true" ]; then
   echo "Appending Java options: -Djdk.internal.httpclient.disableHostnameVerification=${SE_JAVA_DISABLE_HOSTNAME_VERIFICATION}"
   SE_JAVA_OPTS="$SE_JAVA_OPTS -Djdk.internal.httpclient.disableHostnameVerification=${SE_JAVA_DISABLE_HOSTNAME_VERIFICATION}"
   # Configure certificate and private key for component communication
-  if [ ! -z "$SE_HTTPS_CERTIFICATE" ]; then
-    append_se_opts "--https-certificate" "${SE_HTTPS_CERTIFICATE}"
-  fi
-  if [ ! -z "$SE_HTTPS_PRIVATE_KEY" ]; then
-    append_se_opts "--https-private-key" "${SE_HTTPS_PRIVATE_KEY}"
-  fi
+  append_se_opts "--https-certificate" "${SE_HTTPS_CERTIFICATE}"
+  append_se_opts "--https-private-key" "${SE_HTTPS_PRIVATE_KEY}"
 fi
 
 EXTRA_LIBS=""
@@ -122,12 +96,13 @@ else
   echo "Tracing is disabled"
 fi
 
+if [ ! -z "$SE_OPTS" ]; then
+  echo "All Selenium options: ${SE_OPTS}"
+fi
+
 java ${JAVA_OPTS:-$SE_JAVA_OPTS} \
   -jar /opt/selenium/selenium-server.jar \
   ${EXTRA_LIBS} standalone \
-  --session-request-timeout ${SE_SESSION_REQUEST_TIMEOUT} \
-  --session-retry-interval ${SE_SESSION_RETRY_INTERVAL} \
-  --relax-checks ${SE_RELAX_CHECKS} \
   --detect-drivers false \
   --bind-host ${SE_BIND_HOST} \
   --config /opt/selenium/config.toml \

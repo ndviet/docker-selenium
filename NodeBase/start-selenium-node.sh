@@ -12,10 +12,16 @@ pacmd set-default-source v1.monitor
 
 rm -f /tmp/.X*lock
 
+echo "Starting Selenium Grid Node..."
+
 function append_se_opts() {
   local option="${1}"
   local value="${2:-""}"
-  local log_message="${3:-true}"
+  local allow_empty="${3:-false}"
+  local log_message="${4:-true}"
+  if [ "${allow_empty}" = "false" ] && [ -z "${value}" ]; then
+    return
+  fi
   if [[ "${SE_OPTS}" != *"${option}"* ]]; then
     if [ "${log_message}" = "true" ]; then
       echo "Appending Selenium option: ${option} ${value}"
@@ -24,8 +30,9 @@ function append_se_opts() {
     if [ ! -z "${value}" ]; then
       SE_OPTS="${SE_OPTS} ${value}"
     fi
+    export SE_OPTS
   else
-    echo "Selenium option: ${option} already set in env variable SE_OPTS. Ignore new option: ${option} ${value}"
+    echo "Selenium option: ${option} already set in env variable SE_OPTS. Skipping new option: ${option} ${value}"
   fi
 }
 
@@ -44,49 +51,16 @@ if [[ -z "${SE_EVENT_BUS_SUBSCRIBE_PORT}" ]]; then
   exit 1
 fi
 
-if [ ! -z "$SE_OPTS" ]; then
-  echo "Appending Selenium options: ${SE_OPTS}"
-fi
-
-if [ ! -z "$SE_NODE_SESSION_TIMEOUT" ]; then
-  append_se_opts "--session-timeout" "${SE_NODE_SESSION_TIMEOUT}"
-fi
-
-if [ ! -z "$SE_NODE_ENABLE_MANAGED_DOWNLOADS" ]; then
-  append_se_opts "--enable-managed-downloads" "${SE_NODE_ENABLE_MANAGED_DOWNLOADS}"
-fi
-
-if [ ! -z "$SE_NODE_ENABLE_CDP" ]; then
-  append_se_opts "--enable-cdp" "${SE_NODE_ENABLE_CDP}"
-fi
-
-if [ ! -z "$SE_NODE_REGISTER_PERIOD" ]; then
-  append_se_opts "--register-period" "${SE_NODE_REGISTER_PERIOD}"
-fi
-
-if [ ! -z "$SE_NODE_REGISTER_CYCLE" ]; then
-  append_se_opts "--register-cycle" "${SE_NODE_REGISTER_CYCLE}"
-fi
-
-if [ ! -z "$SE_NODE_HEARTBEAT_PERIOD" ]; then
-  append_se_opts "--heartbeat-period" "${SE_NODE_HEARTBEAT_PERIOD}"
-fi
-
-if [ ! -z "$SE_LOG_LEVEL" ]; then
-  append_se_opts "--log-level" "${SE_LOG_LEVEL}"
-fi
-
-if [ ! -z "$SE_HTTP_LOGS" ]; then
-  append_se_opts "--http-logs" "${SE_HTTP_LOGS}"
-fi
-
-if [ ! -z "$SE_STRUCTURED_LOGS" ]; then
-  append_se_opts "--structured-logs" "${SE_STRUCTURED_LOGS}"
-fi
-
-if [ ! -z "$SE_EXTERNAL_URL" ]; then
-  append_se_opts "--external-url" "${SE_EXTERNAL_URL}"
-fi
+append_se_opts "--session-timeout" "${SE_NODE_SESSION_TIMEOUT}"
+append_se_opts "--enable-managed-downloads" "${SE_NODE_ENABLE_MANAGED_DOWNLOADS}"
+append_se_opts "--enable-cdp" "${SE_NODE_ENABLE_CDP}"
+append_se_opts "--register-period" "${SE_NODE_REGISTER_PERIOD}"
+append_se_opts "--register-cycle" "${SE_NODE_REGISTER_CYCLE}"
+append_se_opts "--heartbeat-period" "${SE_NODE_HEARTBEAT_PERIOD}"
+append_se_opts "--log-level" "${SE_LOG_LEVEL}"
+append_se_opts "--http-logs" "${SE_HTTP_LOGS}"
+append_se_opts "--structured-logs" "${SE_STRUCTURED_LOGS}"
+append_se_opts "--external-url" "${SE_EXTERNAL_URL}"
 
 if [ "${SE_ENABLE_TLS}" = "true" ]; then
   # Configure truststore for the server
@@ -105,17 +79,11 @@ if [ "${SE_ENABLE_TLS}" = "true" ]; then
   echo "Appending Java options: -Djdk.internal.httpclient.disableHostnameVerification=${SE_JAVA_DISABLE_HOSTNAME_VERIFICATION}"
   SE_JAVA_OPTS="$SE_JAVA_OPTS -Djdk.internal.httpclient.disableHostnameVerification=${SE_JAVA_DISABLE_HOSTNAME_VERIFICATION}"
   # Configure certificate and private key for component communication
-  if [ ! -z "$SE_HTTPS_CERTIFICATE" ]; then
-    append_se_opts "--https-certificate" "${SE_HTTPS_CERTIFICATE}"
-  fi
-  if [ ! -z "$SE_HTTPS_PRIVATE_KEY" ]; then
-    append_se_opts "--https-private-key" "${SE_HTTPS_PRIVATE_KEY}"
-  fi
+  append_se_opts "--https-certificate" "${SE_HTTPS_CERTIFICATE}"
+  append_se_opts "--https-private-key" "${SE_HTTPS_PRIVATE_KEY}"
 fi
 
-if [ ! -z "$SE_REGISTRATION_SECRET" ]; then
-  append_se_opts "--registration-secret" "${SE_REGISTRATION_SECRET}"
-fi
+append_se_opts "--registration-secret" "${SE_REGISTRATION_SECRET}"
 
 if [ "$GENERATE_CONFIG" = true ]; then
   echo "Generating Selenium Config"
@@ -160,6 +128,10 @@ echo "Starting Selenium Grid Node..."
 CHROME_DRIVER_PATH_PROPERTY=-Dwebdriver.chrome.driver=/usr/bin/chromedriver
 EDGE_DRIVER_PATH_PROPERTY=-Dwebdriver.edge.driver=/usr/bin/msedgedriver
 GECKO_DRIVER_PATH_PROPERTY=-Dwebdriver.gecko.driver=/usr/bin/geckodriver
+
+if [ ! -z "$SE_OPTS" ]; then
+  echo "All Selenium options: ${SE_OPTS}"
+fi
 
 java ${JAVA_OPTS:-$SE_JAVA_OPTS} \
   ${CHROME_DRIVER_PATH_PROPERTY} \

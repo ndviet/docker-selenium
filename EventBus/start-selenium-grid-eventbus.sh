@@ -5,6 +5,28 @@ set -e
 
 echo "Starting Selenium Grid EventBus..."
 
+function append_se_opts() {
+  local option="${1}"
+  local value="${2:-""}"
+  local allow_empty="${3:-false}"
+  local log_message="${4:-true}"
+  if [ "${allow_empty}" = "false" ] && [ -z "${value}" ]; then
+    return
+  fi
+  if [[ "${SE_OPTS}" != *"${option}"* ]]; then
+    if [ "${log_message}" = "true" ]; then
+      echo "Appending Selenium option: ${option} ${value}"
+    fi
+    SE_OPTS="${SE_OPTS} ${option}"
+    if [ ! -z "${value}" ]; then
+      SE_OPTS="${SE_OPTS} ${value}"
+    fi
+    export SE_OPTS
+  else
+    echo "Selenium option: ${option} already set in env variable SE_OPTS. Skipping new option: ${option} ${value}"
+  fi
+}
+
 if [ ! -z "$SE_EVENT_BUS_HOST" ]; then
   echo "Using SE_EVENT_BUS_HOST: ${SE_EVENT_BUS_HOST}"
   HOST_CONFIG="--host ${SE_EVENT_BUS_HOST}"
@@ -15,29 +37,10 @@ if [ ! -z "$SE_EVENT_BUS_PORT" ]; then
   PORT_CONFIG="--port ${SE_EVENT_BUS_PORT}"
 fi
 
-if [ ! -z "$SE_OPTS" ]; then
-  echo "Appending Selenium options: ${SE_OPTS}"
-fi
-
-if [ ! -z "$SE_LOG_LEVEL" ]; then
-  echo "Appending Selenium options: --log-level ${SE_LOG_LEVEL}"
-  SE_OPTS="$SE_OPTS --log-level ${SE_LOG_LEVEL}"
-fi
-
-if [ ! -z "$SE_HTTP_LOGS" ]; then
-  echo "Appending Selenium options: --http-logs ${SE_HTTP_LOGS}"
-  SE_OPTS="$SE_OPTS --http-logs ${SE_HTTP_LOGS}"
-fi
-
-if [ ! -z "$SE_STRUCTURED_LOGS" ]; then
-  echo "Appending Selenium options: --structured-logs ${SE_STRUCTURED_LOGS}"
-  SE_OPTS="$SE_OPTS --structured-logs ${SE_STRUCTURED_LOGS}"
-fi
-
-if [ ! -z "$SE_EXTERNAL_URL" ]; then
-  echo "Appending Selenium options: --external-url ${SE_EXTERNAL_URL}"
-  SE_OPTS="$SE_OPTS --external-url ${SE_EXTERNAL_URL}"
-fi
+append_se_opts "--log-level" "${SE_LOG_LEVEL}"
+append_se_opts "--http-logs" "${SE_HTTP_LOGS}"
+append_se_opts "--structured-logs" "${SE_STRUCTURED_LOGS}"
+append_se_opts "--external-url" "${SE_EXTERNAL_URL}"
 
 if [ "${SE_ENABLE_TLS}" = "true" ]; then
   # Configure truststore for the server
@@ -56,14 +59,8 @@ if [ "${SE_ENABLE_TLS}" = "true" ]; then
   echo "Appending Java options: -Djdk.internal.httpclient.disableHostnameVerification=${SE_JAVA_DISABLE_HOSTNAME_VERIFICATION}"
   SE_JAVA_OPTS="$SE_JAVA_OPTS -Djdk.internal.httpclient.disableHostnameVerification=${SE_JAVA_DISABLE_HOSTNAME_VERIFICATION}"
   # Configure certificate and private key for component communication
-  if [ ! -z "$SE_HTTPS_CERTIFICATE" ]; then
-    echo "Appending Selenium options: --https-certificate ${SE_HTTPS_CERTIFICATE}"
-    SE_OPTS="$SE_OPTS --https-certificate ${SE_HTTPS_CERTIFICATE}"
-  fi
-  if [ ! -z "$SE_HTTPS_PRIVATE_KEY" ]; then
-    echo "Appending Selenium options: --https-private-key ${SE_HTTPS_PRIVATE_KEY}"
-    SE_OPTS="$SE_OPTS --https-private-key ${SE_HTTPS_PRIVATE_KEY}"
-  fi
+  append_se_opts "--https-certificate" "${SE_HTTPS_CERTIFICATE}"
+  append_se_opts "--https-private-key" "${SE_HTTPS_PRIVATE_KEY}"
 fi
 
 EXTRA_LIBS=""
@@ -91,9 +88,13 @@ if [ "$SE_ENABLE_TRACING" = "true" ]; then
     SE_JAVA_OPTS="$SE_JAVA_OPTS ${SE_OTEL_JVM_ARGS}"
   fi
 else
-  SE_OPTS="$SE_OPTS --tracing false"
+  append_se_opts "--tracing" "false"
   SE_JAVA_OPTS="$SE_JAVA_OPTS -Dwebdriver.remote.enableTracing=false"
   echo "Tracing is disabled"
+fi
+
+if [ ! -z "$SE_OPTS" ]; then
+  echo "All Selenium options: ${SE_OPTS}"
 fi
 
 java ${JAVA_OPTS:-$SE_JAVA_OPTS} \

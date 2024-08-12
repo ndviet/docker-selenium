@@ -8,7 +8,11 @@ echo "Starting Selenium Grid Node Docker..."
 function append_se_opts() {
   local option="${1}"
   local value="${2:-""}"
-  local log_message="${3:-true}"
+  local allow_empty="${3:-false}"
+  local log_message="${4:-true}"
+  if [ "${allow_empty}" = "false" ] && [ -z "${value}" ]; then
+    return
+  fi
   if [[ "${SE_OPTS}" != *"${option}"* ]]; then
     if [ "${log_message}" = "true" ]; then
       echo "Appending Selenium option: ${option} ${value}"
@@ -17,8 +21,9 @@ function append_se_opts() {
     if [ ! -z "${value}" ]; then
       SE_OPTS="${SE_OPTS} ${value}"
     fi
+    export SE_OPTS
   else
-    echo "Selenium option: ${option} already set in env variable SE_OPTS. Ignore new option: ${option} ${value}"
+    echo "Selenium option: ${option} already set in env variable SE_OPTS. Skipping new option: ${option} ${value}"
   fi
 }
 
@@ -37,30 +42,17 @@ if [[ -z "${SE_EVENT_BUS_SUBSCRIBE_PORT}" ]]; then
   exit 1
 fi
 
-if [ ! -z "$SE_OPTS" ]; then
-  echo "Appending Selenium options: ${SE_OPTS}"
-fi
-
 if [ ! -z "$SE_NODE_GRID_URL" ]; then
   echo "Appending Grid url: ${SE_NODE_GRID_URL}"
   SE_GRID_URL="--grid-url ${SE_NODE_GRID_URL}"
 fi
 
-if [ ! -z "$SE_LOG_LEVEL" ]; then
-  append_se_opts "--log-level" "${SE_LOG_LEVEL}"
-fi
-
-if [ ! -z "$SE_HTTP_LOGS" ]; then
-  append_se_opts "--http-logs" "${SE_HTTP_LOGS}"
-fi
-
-if [ ! -z "$SE_STRUCTURED_LOGS" ]; then
-  append_se_opts "--structured-logs" "${SE_STRUCTURED_LOGS}"
-fi
-
-if [ ! -z "$SE_EXTERNAL_URL" ]; then
-  append_se_opts "--external-url" "${SE_EXTERNAL_URL}"
-fi
+append_se_opts "--log-level" "${SE_LOG_LEVEL}"
+append_se_opts "--http-logs" "${SE_HTTP_LOGS}"
+append_se_opts "--structured-logs" "${SE_STRUCTURED_LOGS}"
+append_se_opts "--external-url" "${SE_EXTERNAL_URL}"
+append_se_opts "--publish-events" "tcp://${SE_EVENT_BUS_HOST}:${SE_EVENT_BUS_PUBLISH_PORT}"
+append_se_opts "--subscribe-events" "tcp://${SE_EVENT_BUS_HOST}:${SE_EVENT_BUS_SUBSCRIBE_PORT}"
 
 if [ "${SE_ENABLE_TLS}" = "true" ]; then
   # Configure truststore for the server
@@ -79,12 +71,8 @@ if [ "${SE_ENABLE_TLS}" = "true" ]; then
   echo "Appending Java options: -Djdk.internal.httpclient.disableHostnameVerification=${SE_JAVA_DISABLE_HOSTNAME_VERIFICATION}"
   SE_JAVA_OPTS="$SE_JAVA_OPTS -Djdk.internal.httpclient.disableHostnameVerification=${SE_JAVA_DISABLE_HOSTNAME_VERIFICATION}"
   # Configure certificate and private key for component communication
-  if [ ! -z "$SE_HTTPS_CERTIFICATE" ]; then
-    append_se_opts "--https-certificate" "${SE_HTTPS_CERTIFICATE}"
-  fi
-  if [ ! -z "$SE_HTTPS_PRIVATE_KEY" ]; then
-    append_se_opts "--https-private-key" "${SE_HTTPS_PRIVATE_KEY}"
-  fi
+  append_se_opts "--https-certificate" "${SE_HTTPS_CERTIFICATE}"
+  append_se_opts "--https-private-key" "${SE_HTTPS_PRIVATE_KEY}"
 fi
 
 EXTRA_LIBS=""
@@ -117,11 +105,13 @@ else
   echo "Tracing is disabled"
 fi
 
+if [ ! -z "$SE_OPTS" ]; then
+  echo "All Selenium options: ${SE_OPTS}"
+fi
+
 java ${JAVA_OPTS:-$SE_JAVA_OPTS} \
   -jar /opt/selenium/selenium-server.jar \
   ${EXTRA_LIBS} node \
-  --publish-events tcp://"${SE_EVENT_BUS_HOST}":${SE_EVENT_BUS_PUBLISH_PORT} \
-  --subscribe-events tcp://"${SE_EVENT_BUS_HOST}":${SE_EVENT_BUS_SUBSCRIBE_PORT} \
   --bind-host ${SE_BIND_HOST} \
   --detect-drivers false \
   --config /opt/selenium/${SE_NODE_DOCKER_CONFIG_FILENAME:-"config.toml"} \

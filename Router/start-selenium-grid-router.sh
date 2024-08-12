@@ -5,6 +5,28 @@ set -e
 
 echo "Starting Selenium Grid Router..."
 
+function append_se_opts() {
+  local option="${1}"
+  local value="${2:-""}"
+  local allow_empty="${3:-false}"
+  local log_message="${4:-true}"
+  if [ "${allow_empty}" = "false" ] && [ -z "${value}" ]; then
+    return
+  fi
+  if [[ "${SE_OPTS}" != *"${option}"* ]]; then
+    if [ "${log_message}" = "true" ]; then
+      echo "Appending Selenium option: ${option} ${value}"
+    fi
+    SE_OPTS="${SE_OPTS} ${option}"
+    if [ ! -z "${value}" ]; then
+      SE_OPTS="${SE_OPTS} ${value}"
+    fi
+    export SE_OPTS
+  else
+    echo "Selenium option: ${option} already set in env variable SE_OPTS. Skipping new option: ${option} ${value}"
+  fi
+}
+
 if [[ -z "${SE_SESSIONS_MAP_HOST}" ]]; then
   echo "SE_SESSIONS_MAP_HOST not set, exiting!" 1>&2
   exit 1
@@ -40,10 +62,6 @@ if [ ! -z "$SE_SUB_PATH" ]; then
   SUB_PATH_CONFIG="--sub-path ${SE_SUB_PATH}"
 fi
 
-if [ ! -z "$SE_OPTS" ]; then
-  echo "Appending Selenium options: ${SE_OPTS}"
-fi
-
 if [ ! -z "$SE_ROUTER_HOST" ]; then
   echo "Using SE_ROUTER_HOST: ${SE_ROUTER_HOST}"
   HOST_CONFIG="--host ${SE_ROUTER_HOST}"
@@ -54,25 +72,10 @@ if [ ! -z "$SE_ROUTER_PORT" ]; then
   PORT_CONFIG="--port ${SE_ROUTER_PORT}"
 fi
 
-if [ ! -z "$SE_LOG_LEVEL" ]; then
-  echo "Appending Selenium options: --log-level ${SE_LOG_LEVEL}"
-  SE_OPTS="$SE_OPTS --log-level ${SE_LOG_LEVEL}"
-fi
-
-if [ ! -z "$SE_HTTP_LOGS" ]; then
-  echo "Appending Selenium options: --http-logs ${SE_HTTP_LOGS}"
-  SE_OPTS="$SE_OPTS --http-logs ${SE_HTTP_LOGS}"
-fi
-
-if [ ! -z "$SE_STRUCTURED_LOGS" ]; then
-  echo "Appending Selenium options: --structured-logs ${SE_STRUCTURED_LOGS}"
-  SE_OPTS="$SE_OPTS --structured-logs ${SE_STRUCTURED_LOGS}"
-fi
-
-if [ ! -z "$SE_EXTERNAL_URL" ]; then
-  echo "Appending Selenium options: --external-url ${SE_EXTERNAL_URL}"
-  SE_OPTS="$SE_OPTS --external-url ${SE_EXTERNAL_URL}"
-fi
+append_se_opts "--log-level" "${SE_LOG_LEVEL}"
+append_se_opts "--http-logs" "${SE_HTTP_LOGS}"
+append_se_opts "--structured-logs" "${SE_STRUCTURED_LOGS}"
+append_se_opts "--external-url" "${SE_EXTERNAL_URL}"
 
 if [ "${SE_ENABLE_TLS}" = "true" ]; then
   # Configure truststore for the server
@@ -91,35 +94,17 @@ if [ "${SE_ENABLE_TLS}" = "true" ]; then
   echo "Appending Java options: -Djdk.internal.httpclient.disableHostnameVerification=${SE_JAVA_DISABLE_HOSTNAME_VERIFICATION}"
   SE_JAVA_OPTS="$SE_JAVA_OPTS -Djdk.internal.httpclient.disableHostnameVerification=${SE_JAVA_DISABLE_HOSTNAME_VERIFICATION}"
   # Configure certificate and private key for component communication
-  if [ ! -z "$SE_HTTPS_CERTIFICATE" ]; then
-    echo "Appending Selenium options: --https-certificate ${SE_HTTPS_CERTIFICATE}"
-    SE_OPTS="$SE_OPTS --https-certificate ${SE_HTTPS_CERTIFICATE}"
-  fi
-  if [ ! -z "$SE_HTTPS_PRIVATE_KEY" ]; then
-    echo "Appending Selenium options: --https-private-key ${SE_HTTPS_PRIVATE_KEY}"
-    SE_OPTS="$SE_OPTS --https-private-key ${SE_HTTPS_PRIVATE_KEY}"
-  fi
+  append_se_opts "--https-certificate" "${SE_HTTPS_CERTIFICATE}"
+  append_se_opts "--https-private-key" "${SE_HTTPS_PRIVATE_KEY}"
 fi
 
-if [ ! -z "$SE_REGISTRATION_SECRET" ]; then
-  echo "Appending Selenium options: --registration-secret ${SE_REGISTRATION_SECRET}"
-  SE_OPTS="$SE_OPTS --registration-secret ${SE_REGISTRATION_SECRET}"
-fi
-
-if [ ! -z "$SE_DISABLE_UI" ]; then
-  echo "Appending Selenium options: --disable-ui ${SE_DISABLE_UI}"
-  SE_OPTS="$SE_OPTS --disable-ui ${SE_DISABLE_UI}"
-fi
-
-if [ ! -z "$SE_ROUTER_USERNAME" ]; then
-  echo "Appending Selenium options: --username ${SE_ROUTER_USERNAME}"
-  SE_OPTS="$SE_OPTS --username ${SE_ROUTER_USERNAME}"
-fi
-
-if [ ! -z "$SE_ROUTER_PASSWORD" ]; then
-  echo "Appending Selenium options: --password ${SE_ROUTER_PASSWORD}"
-  SE_OPTS="$SE_OPTS --password ${SE_ROUTER_PASSWORD}"
-fi
+append_se_opts "--registration-secret" "${SE_REGISTRATION_SECRET}"
+append_se_opts "--disable-ui" "${SE_DISABLE_UI}"
+append_se_opts "--username" "${SE_ROUTER_USERNAME}"
+append_se_opts "--password" "${SE_ROUTER_PASSWORD}"
+append_se_opts "--session-request-timeout" "${SE_SESSION_REQUEST_TIMEOUT}"
+append_se_opts "--session-retry-interval" "${SE_SESSION_RETRY_INTERVAL}"
+append_se_opts "--relax-checks" "false"
 
 EXTRA_LIBS=""
 
@@ -146,9 +131,13 @@ if [ "$SE_ENABLE_TRACING" = "true" ]; then
     SE_JAVA_OPTS="$SE_JAVA_OPTS ${SE_OTEL_JVM_ARGS}"
   fi
 else
-  SE_OPTS="$SE_OPTS --tracing false"
+  append_se_opts "--tracing" "false"
   SE_JAVA_OPTS="$SE_JAVA_OPTS -Dwebdriver.remote.enableTracing=false"
   echo "Tracing is disabled"
+fi
+
+if [ ! -z "$SE_OPTS" ]; then
+  echo "All Selenium options: ${SE_OPTS}"
 fi
 
 java ${JAVA_OPTS:-$SE_JAVA_OPTS} \
@@ -157,9 +146,6 @@ java ${JAVA_OPTS:-$SE_JAVA_OPTS} \
   --sessions-host "${SE_SESSIONS_MAP_HOST}" --sessions-port "${SE_SESSIONS_MAP_PORT}" \
   --distributor-host "${SE_DISTRIBUTOR_HOST}" --distributor-port "${SE_DISTRIBUTOR_PORT}" \
   --sessionqueue-host "${SE_SESSION_QUEUE_HOST}" --sessionqueue-port "${SE_SESSION_QUEUE_PORT}" \
-  --session-request-timeout ${SE_SESSION_REQUEST_TIMEOUT} \
-  --session-retry-interval ${SE_SESSION_RETRY_INTERVAL} \
-  --relax-checks true \
   --bind-host ${SE_BIND_HOST} \
   ${HOST_CONFIG} \
   ${PORT_CONFIG} \
