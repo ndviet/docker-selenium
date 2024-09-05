@@ -10,22 +10,40 @@ USER root
 # Firefox
 #=========
 ARG FIREFOX_VERSION=latest
-ARG TARGETARCH
+ARG FIREFOX_LANG_PACK=l10n-en-ca
+RUN install -d -m 0755 /etc/apt/keyrings \
+    && wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- | sudo tee /etc/apt/keyrings/packages.mozilla.org.asc \
+    && echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" | sudo tee -a /etc/apt/sources.list.d/mozilla.list \
+    && echo ' \
+       Package: * \
+       Pin: origin packages.mozilla.org \
+       Pin-Priority: 1000 \
+       ' | sudo tee /etc/apt/preferences.d/mozilla \
+    && apt-get update -qqy
 RUN if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
-        FIREFOX_DOWNLOAD_URL=$(if [ $FIREFOX_VERSION = "latest" ] || [ $FIREFOX_VERSION = "beta-latest" ] || [ $FIREFOX_VERSION = "nightly-latest" ] || [ $FIREFOX_VERSION = "devedition-latest" ] || [ $FIREFOX_VERSION = "esr-latest" ]; then echo "https://download.mozilla.org/?product=firefox-$FIREFOX_VERSION-ssl&os=linux64&lang=en-US"; else echo "https://download-installer.cdn.mozilla.net/pub/firefox/releases/$FIREFOX_VERSION/linux-x86_64/en-US/firefox-$FIREFOX_VERSION.tar.bz2"; fi) ; \
+        if [ -z ${FIREFOX_VERSION} ] || [ ${FIREFOX_VERSION} = "latest" ]; then \
+            apt-get -qqy --no-install-recommends install firefox ; \
+        elif [ $FIREFOX_VERSION = "beta-latest" ] || [ $FIREFOX_VERSION = "nightly-latest" ] || [ $FIREFOX_VERSION = "devedition-latest" ] || [ $FIREFOX_VERSION = "esr-latest" ]; then \
+            FIREFOX_VERSION=$(echo "$FIREFOX_VERSION" | cut -d '-' -f 1) \
+            && apt-get -qqy --no-install-recommends install firefox-${FIREFOX_VERSION}-${FIREFOX_LANG_PACK} \
+            && mv /usr/bin/firefox-${FIREFOX_VERSION} /usr/bin/firefox ; \
+        else \
+            FIREFOX_DOWNLOAD_URL="https://download-installer.cdn.mozilla.net/pub/firefox/releases/$FIREFOX_VERSION/linux-x86_64/en-US/firefox-$FIREFOX_VERSION.tar.bz2" \
+            && apt-get -qqy --no-install-recommends install libavcodec-extra libgtk-3-dev libdbus-glib-1-dev \
+            && rm -rf /var/lib/apt/lists/* /var/cache/apt/* ${HOME}/firefox \
+            && wget --no-verbose -O /tmp/firefox.tar.bz2 $FIREFOX_DOWNLOAD_URL \
+            && tar -C ${HOME} -xjf /tmp/firefox.tar.bz2 \
+            && rm /tmp/firefox.tar.bz2 \
+            && ln -fs ${HOME}/firefox/firefox /usr/bin/firefox ; \
+        fi \
     else \
-        FIREFOX_DOWNLOAD_URL="https://download.mozilla.org/?product=firefox-nightly-latest-ssl&os=linux64-aarch64&lang=en-US" ; \
+        apt-get -qqy --no-install-recommends install firefox-nightly-${FIREFOX_LANG_PACK} \
+        && mv /usr/bin/firefox-nightly /usr/bin/firefox ; \
     fi \
-  && apt-get update -qqy \
-  && apt-get -qqy --no-install-recommends install libavcodec-extra libgtk-3-dev libdbus-glib-1-dev \
-  && rm -rf /var/lib/apt/lists/* /var/cache/apt/* ${HOME}/firefox \
-  && wget --no-verbose -O /tmp/firefox.tar.bz2 $FIREFOX_DOWNLOAD_URL \
-  && tar -C ${HOME} -xjf /tmp/firefox.tar.bz2 \
-  && rm /tmp/firefox.tar.bz2 \
-  && mkdir -p ${HOME}/firefox/distribution/extensions \
-  && setfacl -Rm u:${SEL_USER}:rwx ${HOME}/firefox \
-  && setfacl -Rm g:${SEL_GROUP}:rwx ${HOME}/firefox \
-  && ln -fs ${HOME}/firefox/firefox /usr/bin/firefox
+    && INSTALL_PATH=$(dirname $(readlink -f /usr/bin/firefox)) \
+    && mkdir -p ${INSTALL_PATH}/distribution/extensions \
+    && setfacl -Rm u:${SEL_USER}:rwx ${INSTALL_PATH} \
+    && setfacl -Rm g:${SEL_GROUP}:rwx ${INSTALL_PATH}
 
 #============
 # GeckoDriver
