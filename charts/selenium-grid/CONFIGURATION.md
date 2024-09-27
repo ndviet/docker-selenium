@@ -79,7 +79,7 @@ A Helm chart for creating a Selenium Grid Server in Kubernetes
 | serviceAccount.create | bool | `true` | Create a service account for all components. If using an external service account, set to false and provide its name in `nameOverride` below |
 | serviceAccount.nameOverride | string | `nil` | Override to use an external service account |
 | serviceAccount.annotations | object | `{}` | Annotations for the service account |
-| rbacRole | object | `{"annotations":{},"create":true,"nameOverride":null,"rules":[{"apiGroups":["keda.sh"],"resources":["scaledjobs"],"verbs":["get","list","patch","update","delete"]},{"apiGroups":["keda.sh"],"resources":["scaledobjects"],"verbs":["get","list","patch","update","delete"]},{"apiGroups":["autoscaling"],"resources":["horizontalpodautoscalers"],"verbs":["get","list","patch","update","delete"]}]}` | RBAC settings for patching finalizers KEDA scaled resources |
+| rbacRole | object | `{"annotations":{},"create":true,"nameOverride":null,"rules":[{"apiGroups":["keda.sh"],"resources":["scaledjobs"],"verbs":["get","list","patch","update","delete"]},{"apiGroups":["keda.sh"],"resources":["scaledobjects"],"verbs":["get","list","patch","update","delete"]},{"apiGroups":["keda.sh"],"resources":["triggerauthentication"],"verbs":["get","list","patch","update","delete"]},{"apiGroups":["autoscaling"],"resources":["horizontalpodautoscalers"],"verbs":["get","list","patch","update","delete"]}]}` | RBAC settings for patching finalizers KEDA scaled resources |
 | rbacRole.create | bool | `true` | Enable to create RBAC role to access few KEDA resources. If using an external role, set to false and provide its name in `nameOverride` below |
 | rbacRole.nameOverride | string | `nil` | Override resource name or provide an external role name |
 | rbacRoleBinding | object | `{"annotations":{},"create":true,"nameOverride":null,"roleRef":{"apiGroup":"rbac.authorization.k8s.io","kind":"Role"},"subjects":[{"kind":"ServiceAccount"}]}` | RBAC role binding settings for patching finalizers KEDA scaled resources |
@@ -307,15 +307,26 @@ A Helm chart for creating a Selenium Grid Server in Kubernetes
 | tracing.ingress.paths | list | `[{"backend":{"service":{"name":"{{ .Release.Name }}-jaeger-query","port":{"number":16686}}},"path":"/jaeger","pathType":"Prefix"}]` | Configure paths for Jaeger ingress resource |
 | monitoring.enabled | bool | `false` |  |
 | monitoring.enabledWithExistingAgent | bool | `false` |  |
+| monitoring.exporter.imageRegistry | string | `"ricardbejarano"` |  |
+| monitoring.exporter.imageName | string | `"graphql_exporter"` |  |
+| monitoring.exporter.imageTag | string | `"latest"` |  |
+| monitoring.exporter.imagePullSecret | string | `""` | Custom pull secret for container in patch job |
+| monitoring.exporter.annotations | object | `{}` |  |
+| monitoring.exporter.port | int | `9199` |  |
+| monitoring.exporter.service.enabled | bool | `true` | Create a service for exporter |
+| monitoring.exporter.service.type | string | `"ClusterIP"` | Service type |
+| monitoring.exporter.service.loadBalancerIP | string | `""` | Set specific loadBalancerIP when serviceType is LoadBalancer (see https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer) |
+| monitoring.exporter.service.nodePort | int | `30199` | Node port for service |
+| monitoring.exporter.service.annotations | object | `{}` | Annotations for exporter service |
 | autoscaling.enabled | bool | `false` | Enable autoscaling. Implies installing KEDA |
 | autoscaling.enableWithExistingKEDA | bool | `false` | Enable autoscaling without automatically installing KEDA |
 | autoscaling.scalingType | string | `"job"` | Which type of KEDA scaling to use: job or deployment |
-| autoscaling.authenticationRef | object | `{"annotations":{"helm.sh/hook":"post-install,post-upgrade,post-rollback","helm.sh/hook-weight":"-2"},"name":""}` | Specify an external KEDA TriggerAuthentication resource is used for scaler triggers config. Apply for all browser nodes |
-| autoscaling.annotations | object | `{"helm.sh/hook":"post-install,post-upgrade,post-rollback","helm.sh/hook-weight":"1"}` | Annotations for KEDA resources: ScaledObject and ScaledJob |
+| autoscaling.authenticationRef | object | `{"annotations":{"helm.sh/hook":"post-install,post-upgrade,post-rollback","helm.sh/hook-weight":"1"},"name":""}` | Specify an external KEDA TriggerAuthentication resource is used for scaler triggers config. Apply for all browser nodes |
+| autoscaling.annotations | object | `{"helm.sh/hook":"post-install,post-upgrade,post-rollback","helm.sh/hook-weight":"2"}` | Annotations for KEDA resources: ScaledObject and ScaledJob |
 | autoscaling.patchObjectFinalizers.nameOverride | string | `nil` | Override the name of the patch job |
 | autoscaling.patchObjectFinalizers.enabled | bool | `true` | Enable patching finalizers for KEDA scaled resources. Workaround for Hook post-upgrade selenium-grid/templates/x-node-hpa.yaml failed: object is being deleted: scaledobjects.keda.sh "x" already exists |
 | autoscaling.patchObjectFinalizers.activeDeadlineSeconds | int | `120` | Deadline (in seconds) for patch job to complete |
-| autoscaling.patchObjectFinalizers.annotations | object | `{"helm.sh/hook":"post-install,post-upgrade,post-rollback,pre-delete","helm.sh/hook-delete-policy":"hook-succeeded,before-hook-creation","helm.sh/hook-weight":"-1"}` | Annotations for patch job |
+| autoscaling.patchObjectFinalizers.annotations | object | `{"helm.sh/hook":"pre-upgrade,pre-rollback,pre-delete","helm.sh/hook-delete-policy":"hook-succeeded,before-hook-creation","helm.sh/hook-weight":"-1"}` | Annotations for patch job |
 | autoscaling.patchObjectFinalizers.serviceAccount | string | `""` | Define an external service account name contains permissions to patch KEDA scaled resources |
 | autoscaling.patchObjectFinalizers.imagePullSecret | string | `""` | Custom pull secret for container in patch job |
 | autoscaling.patchObjectFinalizers.resources | object | `{"limits":{"cpu":"50m","memory":"50Mi"},"requests":{"cpu":"10m","memory":"10Mi"}}` | Define resources for container in patch job |

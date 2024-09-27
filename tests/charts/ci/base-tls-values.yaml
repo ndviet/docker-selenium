@@ -3,18 +3,17 @@ registrationSecret:
   value: "HappyTestOps"
 
 monitoring:
-  enabled: false
+  enabled: true
 
 kube-prometheus-stack:
   cleanPrometheusOperatorObjectNames: true
   defaultRules:
     create: true
     annotations:
-      "helm.sh/hook": post-install,post-upgrade,post-rollback
+      "helm.sh/hook": pre-install,pre-upgrade,pre-rollback,post-delete
   alertmanager:
     enabled: true
     annotations:
-      "helm.sh/hook": post-install,post-upgrade,post-rollback
     ingress:
       enabled: true
       ingressClassName: nginx
@@ -26,7 +25,6 @@ kube-prometheus-stack:
     forceDeployDatasources: true
     forceDeployDashboards: true
     annotations:
-      "helm.sh/hook": post-install,post-upgrade,post-rollback
     ingress:
       enabled: true
       ingressClassName: nginx
@@ -35,13 +33,26 @@ kube-prometheus-stack:
   prometheus:
     enabled: true
     annotations:
-      "helm.sh/hook": post-install,post-upgrade,post-rollback
     ingress:
       enabled: true
       ingressClassName: nginx
       hosts:
         - pts.selenium-grid.prod
     prometheusSpec:
+      additionalScrapeConfigs:
+        - job_name: "selenium-grid-analytics"
+          metrics_path: "/query"
+          bearer_token: ""
+          params:
+            endpoint:
+              - 'http://selenium-router.selenium:4444/graphql'
+            query:
+              - |
+                { grid { sessionCount, maxSession, totalSlots, nodeCount, sessionQueueSize }, nodesInfo { nodes { id, status, sessionCount, maxSession, slotCount, stereotypes, sessions { id, capabilities, sessionDurationMillis, slot { id, stereotype } } } }, sessionsInfo { sessionQueueRequests } }
+            zoneTag: []
+          static_configs:
+            - targets:
+                - 'selenium-metrics-exporter.selenium:9199'
       storageSpec:
         volumeClaimTemplate:
           spec:

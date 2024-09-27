@@ -154,6 +154,11 @@ rbacRole:
         - scaledobjects
       verbs: [get, list, patch, update, delete]
     - apiGroups:
+        - keda.sh
+      resources:
+        - triggerauthentication
+      verbs: [get, list, patch, update, delete]
+    - apiGroups:
         - autoscaling
       resources:
         - horizontalpodautoscalers
@@ -791,6 +796,25 @@ tracing:
 monitoring:
   enabled: false
   enabledWithExistingAgent: false
+  exporter:
+    imageRegistry: "ricardbejarano"
+    imageName: "graphql_exporter"
+    imageTag: "latest"
+    # -- Custom pull secret for container in patch job
+    imagePullSecret: ""
+    annotations: {}
+    port: 9199
+    service:
+      # -- Create a service for exporter
+      enabled: true
+      # -- Service type
+      type: ClusterIP
+      # -- Set specific loadBalancerIP when serviceType is LoadBalancer (see https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer)
+      loadBalancerIP: ""
+      # -- Node port for service
+      nodePort: 30199
+      # -- Annotations for exporter service
+      annotations: {}
 
 # Keda scaled object configuration
 autoscaling:
@@ -805,11 +829,11 @@ autoscaling:
     name: ""
     annotations:
       "helm.sh/hook": post-install,post-upgrade,post-rollback
-      "helm.sh/hook-weight": "-2"
+      "helm.sh/hook-weight": "1"
   # -- Annotations for KEDA resources: ScaledObject and ScaledJob
   annotations:
     "helm.sh/hook": post-install,post-upgrade,post-rollback
-    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-weight": "2"
   patchObjectFinalizers:
     # -- Override the name of the patch job
     nameOverride:
@@ -819,7 +843,7 @@ autoscaling:
     activeDeadlineSeconds: 120
     # -- Annotations for patch job
     annotations:
-      "helm.sh/hook": post-install,post-upgrade,post-rollback,pre-delete
+      "helm.sh/hook": pre-upgrade,pre-rollback,pre-delete
       "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
       "helm.sh/hook-weight": "-1"
     # -- Define an external service account name contains permissions to patch KEDA scaled resources

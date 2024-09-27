@@ -45,8 +45,6 @@ autoscaling:
 #  enabled: true
   enableWithExistingKEDA: true
   scalingType: job
-  annotations:
-    helm.sh/hook: post-install,post-upgrade,post-rollback
   scaledOptions:
     minReplicaCount: 0
     maxReplicaCount: 8
